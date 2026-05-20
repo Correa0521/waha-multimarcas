@@ -1,0 +1,100 @@
+services:
+  # 1) n8n
+  - type: web
+    name: multimarcas-n8n
+    runtime: image
+    image:
+      url: docker.io/n8nio/n8n:latest
+    plan: starter
+    autoDeploy: true
+    envVars:
+      - key: N8N_PORT
+        value: "5678"
+      - key: N8N_PROTOCOL
+        value: https
+      - key: N8N_HOST
+        value: multimarcas-n8n.onrender.com
+      - key: WEBHOOK_URL
+        value: https://multimarcas-n8n.onrender.com/
+      - key: GENERIC_TIMEZONE
+        value: America/Sao_Paulo
+      - key: TZ
+        value: America/Sao_Paulo
+      - key: N8N_ENCRYPTION_KEY
+        generateValue: true
+      - key: DB_TYPE
+        value: postgresdb
+      - key: DB_POSTGRESDB_HOST
+        fromDatabase:
+          name: multimarcas-postgres
+          property: host
+      - key: DB_POSTGRESDB_PORT
+        fromDatabase:
+          name: multimarcas-postgres
+          property: port
+      - key: DB_POSTGRESDB_DATABASE
+        fromDatabase:
+          name: multimarcas-postgres
+          property: database
+      - key: DB_POSTGRESDB_USER
+        fromDatabase:
+          name: multimarcas-postgres
+          property: user
+      - key: DB_POSTGRESDB_PASSWORD
+        fromDatabase:
+          name: multimarcas-postgres
+          property: password
+      - key: N8N_SECURE_COOKIE
+        value: "true"
+    disk:
+      name: n8n-data
+      mountPath: /home/node/.n8n
+      sizeGB: 1
+
+  # 2) WAHA
+  - type: web
+    name: multimarcas-waha
+    runtime: image
+    image:
+      url: docker.io/devlikeapro/waha:latest
+    plan: starter
+    autoDeploy: true
+    envVars:
+      - key: WHATSAPP_DEFAULT_ENGINE
+        value: GOWS
+      - key: WHATSAPP_API_PORT
+        value: "3000"
+      - key: WAHA_BASE_URL
+        value: https://multimarcas-waha.onrender.com
+      - key: WAHA_PUBLIC_URL
+        value: https://multimarcas-waha.onrender.com
+      - key: WHATSAPP_HOOK_URL
+        value: https://multimarcas-n8n.onrender.com/webhook/SEU_WEBHOOK_AQUI
+      - key: WHATSAPP_HOOK_EVENTS
+        value: message
+      - key: WAHA_PRINT_QR
+        value: "true"
+    disk:
+      name: waha-data
+      mountPath: /app/.sessions
+      sizeGB: 1
+
+  # 3) Redis
+  - type: pserv
+    name: multimarcas-redis
+    runtime: image
+    image:
+      url: docker.io/redis:latest
+    plan: starter
+    autoDeploy: true
+    disk:
+      name: redis-data
+      mountPath: /data
+      sizeGB: 1
+
+databases:
+  # Banco do n8n para salvar workflows, credenciais e execuções.
+  - name: multimarcas-postgres
+    plan: starter
+    databaseName: n8n
+    user: n8n
